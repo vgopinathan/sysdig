@@ -993,6 +993,7 @@ scap_t* scap_open(scap_open_args args, char *error, int32_t *rc)
 	return NULL;
 }
 
+#if defined(HAS_CAPTURE) && !defined(CYGWING_AGENT)
 void scap_close_udig(scap_t* handle)
 {
 	if(handle->m_devs[0].m_buffer != MAP_FAILED)
@@ -1023,6 +1024,7 @@ void scap_close_udig(scap_t* handle)
 	}
 #endif
 }
+#endif
 
 void scap_close(scap_t* handle)
 {
@@ -1060,7 +1062,8 @@ void scap_close(scap_t* handle)
 				//
 				// Destroy all the device descriptors
 				//
-				for(uint32_t j = 0; j < handle->m_ndevs; j++)
+				uint32_t j;
+				for(j = 0; j < handle->m_ndevs; j++)
 				{
 					if(handle->m_devs[j].m_buffer != MAP_FAILED)
 					{
@@ -1689,8 +1692,6 @@ scap_threadinfo* scap_get_proc_table(scap_t* handle)
 //
 int32_t scap_get_stats(scap_t* handle, OUT scap_stats* stats)
 {
-	uint32_t j;
-
 	stats->n_evts = 0;
 	stats->n_drops = 0;
 	stats->n_drops_buffer = 0;
@@ -1709,6 +1710,8 @@ int32_t scap_get_stats(scap_t* handle, OUT scap_stats* stats)
 	}
 	else
 	{
+		uint32_t j;
+
 		for(j = 0; j < handle->m_ndevs; j++)
 		{
 			stats->n_evts += handle->m_devs[j].m_bufinfo->n_evts;
@@ -1810,7 +1813,8 @@ int32_t scap_start_capture(scap_t* handle)
 		else
 		{
 #ifndef _WIN32
-			for(uint32_t j = 0; j < handle->m_ndevs; j++)
+			uint32_t j;
+			for(j = 0; j < handle->m_ndevs; j++)
 			{
 				if(ioctl(handle->m_devs[j].m_fd, PPM_IOCTL_ENABLE_CAPTURE))
 				{
@@ -1891,7 +1895,7 @@ int32_t scap_enable_tracers_capture(scap_t* handle)
 		{
 			return scap_bpf_enable_tracers_capture(handle);
 		}
-		else
+		else if(!handle->m_udig)
 		{
 			if(ioctl(handle->m_devs[0].m_fd, PPM_IOCTL_SET_TRACERS_CAPTURE))
 			{
@@ -2430,8 +2434,6 @@ int32_t scap_enable_simpledriver_mode(scap_t* handle)
 
 int32_t scap_get_n_tracepoint_hit(scap_t* handle, long* ret)
 {
-	int ioctl_ret = 0;
-
 	//
 	// Not supported on files
 	//
@@ -2456,6 +2458,8 @@ int32_t scap_get_n_tracepoint_hit(scap_t* handle, long* ret)
 	}
 	else
 	{
+		int ioctl_ret = 0;
+
 		ioctl_ret = ioctl(handle->m_devs[0].m_fd, PPM_IOCTL_GET_N_TRACEPOINT_HIT, ret);
 		if(ioctl_ret != 0)
 		{
