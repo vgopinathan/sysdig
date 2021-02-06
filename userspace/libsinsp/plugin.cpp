@@ -75,7 +75,7 @@ public:
 		// which is a waste of resources if the input producer is idle for a lot of time
 		//
 		int old_val = state::INPUT_READY;
-		while (!m_lock.compare_exchange_strong(old_val, state::PROCESSING))
+		while(!m_lock.compare_exchange_strong(old_val, state::PROCESSING))
 		{
 			// shutdown
 			if (old_val == state::SHUTDOWN_REQ)
@@ -94,7 +94,7 @@ public:
 		// Set SHUTDOWN_REQ iff the worker
 		//
 		int old_val = state::DONE;
-		while (m_lock.compare_exchange_strong(old_val, state::SHUTDOWN_REQ))
+		while(m_lock.compare_exchange_strong(old_val, state::SHUTDOWN_REQ))
 		{
 			old_val = state::DONE;
 		}
@@ -307,7 +307,7 @@ sinsp_plugin::~sinsp_plugin()
 {
 	if(m_source_info.destroy != NULL)
 	{
-		if (m_source_info.register_async_extractor)
+		if(m_source_info.register_async_extractor)
 		{
 			static_cast<sinsp_async_extractor_ctx *>(m_async_extractor_info.waitCtx)->shutdown();
 		}
