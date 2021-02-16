@@ -886,34 +886,6 @@ func plugin_register_async_extractor(plgState unsafe.Pointer, info *C.async_extr
 		for sinsp.Wait(unsafe.Pointer(info)) {
 			(*info).res = plugin_extract_str(plgState, uint64(info.evtnum), uint32(info.id), info.arg, info.data, uint32(info.datalen))
 		}
-
-		// fmt.Printf("G! %p\n", plgState)
-		// var glock *int32 = (*int32)(&(info.lock))
-
-		// j := 0
-		// for true {
-		// 	if atomic.CompareAndSwapInt32(glock,
-		// 		1,   // old				1,   // old
-		// 		2) { // new				2) { // new
-		// 		//fmt.Printf("O %p\n", plgState)
-		// 		(*info).res = nil
-		// 		//(*info).res = plugin_extract_str(plgState, uint64(info.evtnum), uint32(info.id), info.arg, info.data, uint32(info.datalen))
-
-		// 		for true {
-		// 			if atomic.CompareAndSwapInt32(glock,
-		// 				2,   // old
-		// 				3) { // new
-		// 				break
-		// 			}
-		// 		}
-		// 	}
-
-		// 	j++
-
-		// 	if j%50000 == 0 {
-		// 		runtime.Gosched()
-		// 	}
-		// }
 	}()
 	return sinsp.ScapSuccess
 }
