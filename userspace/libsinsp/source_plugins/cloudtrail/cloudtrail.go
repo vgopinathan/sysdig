@@ -538,7 +538,8 @@ func Next(plgState unsafe.Pointer, openState unsafe.Pointer, data *[]byte, ts *u
 	//
 	var cr *fastjson.Value
 	if len(oCtx.evtJsonStrings) != 0 {
-		cr, err = oCtx.nextJParser.Parse(string(oCtx.evtJsonStrings[oCtx.evtJsonListPos]))
+		*data = oCtx.evtJsonStrings[oCtx.evtJsonListPos]
+		cr, err = oCtx.nextJParser.Parse(string(*data))
 		if err != nil {
 			//
 			// Not json? Just skip this event.
@@ -547,7 +548,6 @@ func Next(plgState unsafe.Pointer, openState unsafe.Pointer, data *[]byte, ts *u
 			return sinsp.ScapTimeout
 		}
 
-		*data = oCtx.evtJsonStrings[oCtx.evtJsonListPos]
 		oCtx.evtJsonListPos++
 	} else {
 		//
