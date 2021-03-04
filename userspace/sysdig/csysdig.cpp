@@ -84,7 +84,9 @@ static void signal_callback(int signal)
 		else
 		{
 			g_terminate = true;
+#ifndef _WIN32
 			alarm(2);
+#endif
 		}
 	}
 	else
@@ -743,13 +745,15 @@ sysdig_init_res csysdig_init(int argc, char **argv)
 			goto exit;
 		}
 
+#ifndef _WIN32
 		if(signal(SIGALRM, signal_callback) == SIG_ERR)
 		{
 			fprintf(stderr, "An error occurred while setting SIGALRM signal handler.\n");
 			res.m_res = EXIT_FAILURE;
 			goto exit;
 		}
-		
+#endif
+
 		if(json_last_row < json_first_row)
 		{
 			fprintf(stderr, "'to' argument cannot be smaller than the 'from' one.\n");
