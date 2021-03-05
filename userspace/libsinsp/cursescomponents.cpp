@@ -825,7 +825,7 @@ curses_textbox::curses_textbox(sinsp* inspector, sinsp_cursesui* parent, int32_t
 	//
 	// Tell the parent to check for input more often
 	//
-	m_parent->m_input_check_period_ns = 100000;
+	m_parent->m_input_check_period_ns = UI_USER_INPUT_CHECK_PERIOD_FAST_NS;
 
 	//
 	// Initial screen refresh

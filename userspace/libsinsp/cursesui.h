@@ -24,6 +24,7 @@ limitations under the License.
 #endif
 
 #define UI_USER_INPUT_CHECK_PERIOD_NS 10000000
+#define UI_USER_INPUT_CHECK_PERIOD_FAST_NS 100000
 #define VIEW_SIDEMENU_WIDTH 20
 #define ACTION_SIDEMENU_WIDTH 30
 #define FILTER_TEMPLATE_MAGIC "@#$f1CA^&;"
@@ -518,7 +519,7 @@ public:
 				//
 				// If this is a file, print the progress once in a while
 				//
-				if(!m_inspector->is_live() && !m_offline_replay)
+				if(!m_inspector->is_live() && !m_inspector->is_plugin() && !m_offline_replay)
 				{
 					uint64_t progress_interval;
 					if(g_is_aws)
