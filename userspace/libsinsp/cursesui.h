@@ -524,7 +524,7 @@ public:
 					uint64_t progress_interval;
 					if(g_is_aws)
 					{
-						progress_interval = 15000;
+						progress_interval = 30000;
 					}
 					else
 					{
