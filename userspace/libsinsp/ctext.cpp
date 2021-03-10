@@ -796,14 +796,13 @@ char* next_type(char* search, const char delim)
 int8_t ctext::vprintf(const char*format, va_list ap)
 {
 	char *p_line, *n_line;
-	char large_buffer[CTEXT_BUFFER_SIZE];
 
 	this->add_format_if_needed();
 	ctext_row *p_row = &this->m_buffer.back();
 
-	vsnprintf(large_buffer, CTEXT_BUFFER_SIZE, format, ap);
+	vsnprintf(m_vprintf_buffer, CTEXT_BUFFER_SIZE, format, ap);
 
-	p_line = large_buffer;
+	p_line = m_vprintf_buffer;
 	do 
 	{
 		n_line = next_type(p_line, '\n');

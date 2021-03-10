@@ -27,7 +27,7 @@ limitations under the License.
 
 #ifndef __83a9222a_c8b9_4f36_9721_5dfbaccb28d0_CTEXT
 #define __83a9222a_c8b9_4f36_9721_5dfbaccb28d0_CTEXT
-#define CTEXT_BUFFER_SIZE (4096)
+#define CTEXT_BUFFER_SIZE (65536)
 
 using namespace std;
 
@@ -523,6 +523,7 @@ class ctext
 		int32_t m_win_width;
 		int32_t m_win_height;
 		uint64_t m_event_counter;
+		char m_vprintf_buffer[CTEXT_BUFFER_SIZE];
 
 		ofstream *m_debug;
 };
