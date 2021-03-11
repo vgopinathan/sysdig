@@ -810,12 +810,12 @@ void sinsp_cursesui::render_header()
 
 		if(vs == "")
 		{
-			vs = "whole machine";
+			vs = g_is_aws? WHOLE_STR_AWS : WHOLE_STR;
 		}
 	}
 	else
 	{
-		vs = "whole machine";
+		vs = g_is_aws? WHOLE_STR_AWS : WHOLE_STR;
 	}
 
 	mvaddstr(0, k, vs.c_str());

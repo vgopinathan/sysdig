@@ -28,6 +28,9 @@ limitations under the License.
 #define VIEW_SIDEMENU_WIDTH 20
 #define ACTION_SIDEMENU_WIDTH 30
 #define FILTER_TEMPLATE_MAGIC "@#$f1CA^&;"
+#define WHOLE_STR "whole machine"
+#define WHOLE_STR_AWS "whole infrastructure"
+
 string combine_filters(string flt1, string flt2);
 class ctext;
 class sinsp_chart;
