@@ -39,7 +39,7 @@ import (
 // Plugin info
 const (
 	PluginID          uint32 = 2
-	PluginName               = "cloudtrail"
+	PluginName               = "Cloudtrail"
 	PluginFilterName         = "ct"
 	PluginDescription        = "reads cloudtrail JSON data saved to file in the directory specified in the settings"
 )
@@ -205,27 +205,27 @@ const (
 //export plugin_get_fields
 func plugin_get_fields() *C.char {
 	flds := []sinsp.FieldEntry{
-		{Type: "string", ID: FieldIDCtID, Name: "ct.id", Display: "Cloudtrail Event ID", Desc: "the unique ID of the cloudtrail event (eventID in the json)."},
-		{Type: "string", ID: FieldIDCtTime, Name: "ct.time", Display: "Cloudtrail Timestamp", Desc: "the timestamp of the cloudtrail event (eventTime in the json)."},
-		{Type: "string", ID: FieldIDCtSrc, Name: "ct.src", Display: "AWS Service", Desc: "the source of the cloudtrail event (eventSource in the json, without the '.amazonaws.com' trailer)."},
-		{Type: "string", ID: FieldIDCtName, Name: "ct.name", Display: "Event Name", Desc: "the name of the cloudtrail event (eventName in the json)."},
-		{Type: "string", ID: FieldIDCtUser, Name: "ct.user", Display: "User Name", Desc: "the user of the cloudtrail event (userIdentity.userName in the json)."},
-		{Type: "string", ID: FieldIDCtRegion, Name: "ct.region", Display: "Region", Desc: "the region of the cloudtrail event (awsRegion in the json)."},
-		{Type: "string", ID: FieldIDCtSrcIP, Name: "ct.srcip", Display: "Source IP", Desc: "the IP address generating the event (sourceIPAddress in the json)."},
-		{Type: "string", ID: FieldIDCtUserAgent, Name: "ct.useragent", Display: "User Agent", Desc: "the user agent generating the event (userAgent in the json)."},
-		{Type: "string", ID: FieldIDCtInfo, Name: "ct.info", Display: "Info", Desc: "summary information about the event. This varies depending on the event type and, for some events, it contains event-specific details."},
-		{Type: "string", ID: FieldIDCtIsKey, Name: "ct.is_key", Display: "Important", Desc: "'true' if the event modifies the state (e.g. RunInstances, CreateLoadBalancer...). 'false' otherwise."},
-		{Type: "string", ID: FieldIDS3Uri, Name: "s3.uri", Display: "S3 URI", Desc: "the s3 URI (s3://<bucket>/<key>) for s3 events."},
-		{Type: "string", ID: FieldIDS3Bucket, Name: "s3.bucket", Display: "S3 Bucket Name", Desc: "the bucket name for s3 events."},
-		{Type: "string", ID: FieldIDS3Key, Name: "s3.key", Display: "S3 Key Name", Desc: "the key name for s3 events."},
-		{Type: "string", ID: FieldIDS3Host, Name: "s3.host", Display: "Host Name", Desc: "the host name for s3 events."},
-		{Type: "uint64", ID: FieldIDS3Bytes, Name: "s3.bytes", Display: "Tot Bytes", Desc: "the size of an s3 download or upload, in bytes."},
-		{Type: "uint64", ID: FieldIDS3BytesIn, Name: "s3.bytes.in", Display: "Bytes In", Desc: "the size of an s3 upload, in bytes."},
-		{Type: "uint64", ID: FieldIDS3BytesOut, Name: "s3.bytes.out", Display: "Bytes Out", Desc: "the size of an s3 download, in bytes."},
-		{Type: "uint64", ID: FieldIDS3CntGet, Name: "s3.cnt.get", Display: "N Get Ops", Desc: "the number of get operations. This field is 1 for GetObject events, 0 otherwise."},
-		{Type: "uint64", ID: FieldIDS3CntPut, Name: "s3.cnt.put", Display: "N Put Ops", Desc: "the number of put operations. This field is 1 for PutObject events, 0 otherwise."},
-		{Type: "uint64", ID: FieldIDS3CntOther, Name: "s3.cnt.other", Display: "N Other Ops", Desc: "the number of non I/O operations. This field is 0 for GetObject and PutObject events, 1 for all the other events."},
-		{Type: "string", ID: FieldIDEc2Name, Name: "ec2.name", Display: "Instance Name", Desc: "the name of the ec2 instances, typically stored in the instance tags."},
+		{Type: "string", ID: FieldIDCtID, Name: "ct.id", Display: "Event ID", Desc: "the unique ID of the cloudtrail event (eventID in the json).", Hidden: false},
+		{Type: "string", ID: FieldIDCtTime, Name: "ct.time", Display: "Timestamp", Desc: "the timestamp of the cloudtrail event (eventTime in the json).", Hidden: true},
+		{Type: "string", ID: FieldIDCtSrc, Name: "ct.src", Display: "AWS Service", Desc: "the source of the cloudtrail event (eventSource in the json, without the '.amazonaws.com' trailer).", Hidden: false},
+		{Type: "string", ID: FieldIDCtName, Name: "ct.name", Display: "Event Name", Desc: "the name of the cloudtrail event (eventName in the json).", Hidden: false},
+		{Type: "string", ID: FieldIDCtUser, Name: "ct.user", Display: "User Name", Desc: "the user of the cloudtrail event (userIdentity.userName in the json).", Hidden: false},
+		{Type: "string", ID: FieldIDCtRegion, Name: "ct.region", Display: "Region", Desc: "the region of the cloudtrail event (awsRegion in the json).", Hidden: false},
+		{Type: "string", ID: FieldIDCtSrcIP, Name: "ct.srcip", Display: "Source IP", Desc: "the IP address generating the event (sourceIPAddress in the json).", Hidden: false},
+		{Type: "string", ID: FieldIDCtUserAgent, Name: "ct.useragent", Display: "User Agent", Desc: "the user agent generating the event (userAgent in the json).", Hidden: false},
+		{Type: "string", ID: FieldIDCtInfo, Name: "ct.info", Display: "Info", Desc: "summary information about the event. This varies depending on the event type and, for some events, it contains event-specific details.", Hidden: true},
+		{Type: "string", ID: FieldIDCtIsKey, Name: "ct.is_key", Display: "Modifies State", Desc: "'true' if the event modifies the state (e.g. RunInstances, CreateLoadBalancer...). 'false' otherwise.", Hidden: false},
+		{Type: "string", ID: FieldIDS3Uri, Name: "s3.uri", Display: "S3 URI", Desc: "the s3 URI (s3://<bucket>/<key>) for s3 events.", Hidden: false},
+		{Type: "string", ID: FieldIDS3Bucket, Name: "s3.bucket", Display: "S3 Bucket Name", Desc: "the bucket name for s3 events.", Hidden: false},
+		{Type: "string", ID: FieldIDS3Key, Name: "s3.key", Display: "S3 Key Name", Desc: "the key name for s3 events.", Hidden: false},
+		{Type: "string", ID: FieldIDS3Host, Name: "s3.host", Display: "Host Name", Desc: "the host name for s3 events.", Hidden: false},
+		{Type: "uint64", ID: FieldIDS3Bytes, Name: "s3.bytes", Display: "Tot Bytes", Desc: "the size of an s3 download or upload, in bytes.", Hidden: true},
+		{Type: "uint64", ID: FieldIDS3BytesIn, Name: "s3.bytes.in", Display: "Bytes In", Desc: "the size of an s3 upload, in bytes.", Hidden: true},
+		{Type: "uint64", ID: FieldIDS3BytesOut, Name: "s3.bytes.out", Display: "Bytes Out", Desc: "the size of an s3 download, in bytes.", Hidden: true},
+		{Type: "uint64", ID: FieldIDS3CntGet, Name: "s3.cnt.get", Display: "N Get Ops", Desc: "the number of get operations. This field is 1 for GetObject events, 0 otherwise.", Hidden: true},
+		{Type: "uint64", ID: FieldIDS3CntPut, Name: "s3.cnt.put", Display: "N Put Ops", Desc: "the number of put operations. This field is 1 for PutObject events, 0 otherwise.", Hidden: true},
+		{Type: "uint64", ID: FieldIDS3CntOther, Name: "s3.cnt.other", Display: "N Other Ops", Desc: "the number of non I/O operations. This field is 0 for GetObject and PutObject events, 1 for all the other events.", Hidden: true},
+		{Type: "string", ID: FieldIDEc2Name, Name: "ec2.name", Display: "Instance Name", Desc: "the name of the ec2 instances, typically stored in the instance tags.", Hidden: false},
 	}
 
 	b, err := json.Marshal(&flds)
