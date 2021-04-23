@@ -213,13 +213,13 @@ func plugin_get_fields() *C.char {
 		{Type: "string", ID: FieldIDCtRegion, Name: "ct.region", Display: "Region", Desc: "the region of the cloudtrail event (awsRegion in the json)."},
 		{Type: "string", ID: FieldIDCtSrcIP, Name: "ct.srcip", Display: "Source IP", Desc: "the IP address generating the event (sourceIPAddress in the json)."},
 		{Type: "string", ID: FieldIDCtUserAgent, Name: "ct.useragent", Display: "User Agent", Desc: "the user agent generating the event (userAgent in the json)."},
-		{Type: "string", ID: FieldIDCtInfo, Name: "ct.info", Display: "Info", Desc: "summary information about the event. This varies depending on the event type and, for some events, it contains event-specific details.", Visibility: "hidden"},
+		{Type: "string", ID: FieldIDCtInfo, Name: "ct.info", Display: "Info", Desc: "summary information about the event. This varies depending on the event type and, for some events, it contains event-specific details.", Visibility: "info"},
 		{Type: "string", ID: FieldIDCtIsKey, Name: "ct.is_key", Display: "Modifies State", Desc: "'true' if the event modifies the state (e.g. RunInstances, CreateLoadBalancer...). 'false' otherwise."},
-		{Type: "string", ID: FieldIDS3Uri, Name: "s3.uri", Display: "S3 URI", Desc: "the s3 URI (s3://<bucket>/<key>) for s3 events."},
-		{Type: "string", ID: FieldIDS3Bucket, Name: "s3.bucket", Display: "S3 Bucket Name", Desc: "the bucket name for s3 events."},
-		{Type: "string", ID: FieldIDS3Key, Name: "s3.key", Display: "S3 Key Name", Desc: "the key name for s3 events."},
-		{Type: "string", ID: FieldIDS3Host, Name: "s3.host", Display: "Host Name", Desc: "the host name for s3 events."},
-		{Type: "uint64", ID: FieldIDS3Bytes, Name: "s3.bytes", Display: "Tot Bytes", Desc: "the size of an s3 download or upload, in bytes.", Visibility: "hidden"},
+		{Type: "string", ID: FieldIDS3Uri, Name: "s3.uri", Display: "Key URI", Desc: "the s3 URI (s3://<bucket>/<key>)."},
+		{Type: "string", ID: FieldIDS3Bucket, Name: "s3.bucket", Display: "Bucket Name", Desc: "the bucket name for s3 events."},
+		{Type: "string", ID: FieldIDS3Key, Name: "s3.key", Display: "Key Name", Desc: "the S3 key name."},
+		{Type: "string", ID: FieldIDS3Host, Name: "s3.host", Display: "Host Name", Desc: "the S3 host name."},
+		{Type: "uint64", ID: FieldIDS3Bytes, Name: "s3.bytes", Display: "Tot Bytes", Desc: "the size of an s3 download or upload, in bytes."},
 		{Type: "uint64", ID: FieldIDS3BytesIn, Name: "s3.bytes.in", Display: "Bytes In", Desc: "the size of an s3 upload, in bytes.", Visibility: "hidden"},
 		{Type: "uint64", ID: FieldIDS3BytesOut, Name: "s3.bytes.out", Display: "Bytes Out", Desc: "the size of an s3 download, in bytes.", Visibility: "hidden"},
 		{Type: "uint64", ID: FieldIDS3CntGet, Name: "s3.cnt.get", Display: "N Get Ops", Desc: "the number of get operations. This field is 1 for GetObject events, 0 otherwise.", Visibility: "hidden"},
@@ -626,26 +626,49 @@ func getEvtInfo(jdata *fastjson.Value) string {
 	var present bool
 	var evtname string
 	var info string
+	var separator string
 
 	present, evtname = getfieldStr(jdata, FieldIDCtName)
 	if !present {
 		return "<invalid cloudtrail event: eventName field missing>"
 	}
 
-	switch evtname {
-	case "GetObject", "PutObject":
-		present, uri := getfieldStr(jdata, FieldIDS3Uri)
-		if present {
-			info = fmt.Sprintf("%s", uri)
-		} else {
-			info = "<URI missing>"
-		}
+	present, u64val := getfieldU64(jdata, FieldIDS3Bytes)
+	if present {
+		info = fmt.Sprintf("Size=%v", u64val)
+		separator = " "
+	}
 
+	present, val := getfieldStr(jdata, FieldIDS3Uri)
+	if present {
+		info += fmt.Sprintf("%sURI=%s", separator, val)
+		return info
+	}
+
+	present, val = getfieldStr(jdata, FieldIDS3Bucket)
+	if present {
+		info += fmt.Sprintf("%sBucket=%s", separator, val)
+		return info
+	}
+
+	present, val = getfieldStr(jdata, FieldIDS3Key)
+	if present {
+		info += fmt.Sprintf("%sKey=%s", separator, val)
+		return info
+	}
+
+	present, val = getfieldStr(jdata, FieldIDS3Host)
+	if present {
+		info += fmt.Sprintf("%sHost=%s", separator, val)
+		return info
+	}
+
+	switch evtname {
 	case "PutBucketPublicAccessBlock":
 		info = ""
 		jpac := jdata.GetObject("requestParameters", "PublicAccessBlockConfiguration")
 		if jpac != nil {
-			info += fmt.Sprintf("BlockPublicAcls:%v BlockPublicPolicy:%v IgnorePublicAcls:%v RestrictPublicBuckets:%v ",
+			info += fmt.Sprintf("BlockPublicAcls=%v BlockPublicPolicy=%v IgnorePublicAcls=%v RestrictPublicBuckets=%v ",
 				jdata.GetBool("BlockPublicAcls"),
 				jdata.GetBool("BlockPublicPolicy"),
 				jdata.GetBool("IgnorePublicAcls"),
@@ -766,6 +789,54 @@ func getfieldStr(jdata *fastjson.Value, id uint32) (bool, string) {
 	return true, res
 }
 
+func getfieldU64(jdata *fastjson.Value, id uint32) (bool, uint64) {
+	switch id {
+	case FieldIDS3Bytes:
+		var tot uint64 = 0
+		in := jdata.Get("additionalEventData", "bytesTransferredIn")
+		if in != nil {
+			tot = tot + in.GetUint64()
+		}
+		out := jdata.Get("additionalEventData", "bytesTransferredOut")
+		if out != nil {
+			tot = tot + out.GetUint64()
+		}
+		return (in != nil || out != nil), tot
+	case FieldIDS3BytesIn:
+		var tot uint64 = 0
+		in := jdata.Get("additionalEventData", "bytesTransferredIn")
+		if in != nil {
+			tot = tot + in.GetUint64()
+		}
+		return (in != nil), tot
+	case FieldIDS3BytesOut:
+		var tot uint64 = 0
+		out := jdata.Get("additionalEventData", "bytesTransferredOut")
+		if out != nil {
+			tot = tot + out.GetUint64()
+		}
+		return (out != nil), tot
+	case FieldIDS3CntGet:
+		if string(jdata.GetStringBytes("eventName")) == "GetObject" {
+			return true, 1
+		}
+		return false, 0
+	case FieldIDS3CntPut:
+		if string(jdata.GetStringBytes("eventName")) == "PutObject" {
+			return true, 1
+		}
+		return false, 0
+	case FieldIDS3CntOther:
+		ename := string(jdata.GetStringBytes("eventName"))
+		if ename == "GetObject" || ename == "PutObject" {
+			return true, 1
+		}
+		return false, 0
+	default:
+		return false, 0
+	}
+}
+
 //export plugin_event_to_string
 func plugin_event_to_string(plgState unsafe.Pointer, data *C.char, datalen uint32) *byte {
 	var line string
@@ -863,57 +934,14 @@ func plugin_extract_u64(plgState unsafe.Pointer, evtnum uint64, id uint32, arg *
 		pCtx.jdataEvtnum = evtnum
 	}
 
-	switch id {
-	case FieldIDS3Bytes:
-		var tot uint64 = 0
-		in := pCtx.jdata.Get("additionalEventData", "bytesTransferredIn")
-		if in != nil {
-			tot = tot + in.GetUint64()
-		}
-		out := pCtx.jdata.Get("additionalEventData", "bytesTransferredOut")
-		if out != nil {
-			tot = tot + out.GetUint64()
-		}
+	// loris
+	present, val := getfieldU64(pCtx.jdata, id)
+	if present {
 		*fieldPresent = 1
-		return tot
-	case FieldIDS3BytesIn:
-		var tot uint64 = 0
-		in := pCtx.jdata.Get("additionalEventData", "bytesTransferredIn")
-		if in != nil {
-			tot = tot + in.GetUint64()
-		}
-		*fieldPresent = 1
-		return tot
-	case FieldIDS3BytesOut:
-		var tot uint64 = 0
-		out := pCtx.jdata.Get("additionalEventData", "bytesTransferredOut")
-		if out != nil {
-			tot = tot + out.GetUint64()
-		}
-		*fieldPresent = 1
-		return tot
-	case FieldIDS3CntGet:
-		if string(pCtx.jdata.GetStringBytes("eventName")) == "GetObject" {
-			*fieldPresent = 1
-			return 1
-		}
-		return 0
-	case FieldIDS3CntPut:
-		if string(pCtx.jdata.GetStringBytes("eventName")) == "PutObject" {
-			*fieldPresent = 1
-			return 1
-		}
-		return 0
-	case FieldIDS3CntOther:
-		ename := string(pCtx.jdata.GetStringBytes("eventName"))
-		if ename == "GetObject" || ename == "PutObject" {
-			*fieldPresent = 1
-			return 0
-		}
-		return 1
-	default:
-		return 0
+	} else {
+		*fieldPresent = 0
 	}
+	return val
 }
 
 ///////////////////////////////////////////////////////////////////////////////
