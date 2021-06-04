@@ -188,11 +188,11 @@ const (
 	FieldIDCtSrcIP
 	FieldIDCtUserAgent
 	FieldIDCtInfo
-	FieldIDCtIsKey
+	FieldIDCtReadOnly
+	FieldIDS3Uri
 	FieldIDS3Bucket
 	FieldIDS3Key
 	FieldIDS3Host
-	FieldIDS3Uri
 	FieldIDS3Bytes
 	FieldIDS3BytesIn
 	FieldIDS3BytesOut
@@ -214,7 +214,7 @@ func plugin_get_fields() *C.char {
 		{Type: "string", ID: FieldIDCtSrcIP, Name: "ct.srcip", Display: "Source IP", Desc: "the IP address generating the event (sourceIPAddress in the json).", Properties: "conversation"},
 		{Type: "string", ID: FieldIDCtUserAgent, Name: "ct.useragent", Display: "User Agent", Desc: "the user agent generating the event (userAgent in the json)."},
 		{Type: "string", ID: FieldIDCtInfo, Name: "ct.info", Display: "Info", Desc: "summary information about the event. This varies depending on the event type and, for some events, it contains event-specific details.", Properties: "info"},
-		{Type: "string", ID: FieldIDCtIsKey, Name: "ct.is_key", Display: "Modifies State", Desc: "'true' if the event modifies the state (e.g. RunInstances, CreateLoadBalancer...). 'false' otherwise."},
+		{Type: "string", ID: FieldIDCtReadOnly, Name: "ct.readonly", Display: "Read Only", Desc: "'true' if the event only reads information (e.g. DescribeInstances), 'false' if the event modifies the state (e.g. RunInstances, CreateLoadBalancer...)."},
 		{Type: "string", ID: FieldIDS3Uri, Name: "s3.uri", Display: "Key URI", Desc: "the s3 URI (s3://<bucket>/<key>).", Properties: "conversation"},
 		{Type: "string", ID: FieldIDS3Bucket, Name: "s3.bucket", Display: "Bucket Name", Desc: "the bucket name for s3 events.", Properties: "conversation"},
 		{Type: "string", ID: FieldIDS3Key, Name: "s3.key", Display: "Key Name", Desc: "the S3 key name."},
@@ -633,6 +633,22 @@ func getEvtInfo(jdata *fastjson.Value) string {
 		return "<invalid cloudtrail event: eventName field missing>"
 	}
 
+	switch evtname {
+	case "PutBucketPublicAccessBlock":
+		info = ""
+		jpac := jdata.GetObject("requestParameters", "PublicAccessBlockConfiguration")
+		if jpac != nil {
+			info += fmt.Sprintf("BlockPublicAcls=%v BlockPublicPolicy=%v IgnorePublicAcls=%v RestrictPublicBuckets=%v ",
+				jdata.GetBool("BlockPublicAcls"),
+				jdata.GetBool("BlockPublicPolicy"),
+				jdata.GetBool("IgnorePublicAcls"),
+				jdata.GetBool("RestrictPublicBuckets"),
+			)
+		}
+		return info
+	default:
+	}
+
 	present, u64val := getfieldU64(jdata, FieldIDS3Bytes)
 	if present {
 		info = fmt.Sprintf("Size=%v", u64val)
@@ -661,22 +677,6 @@ func getEvtInfo(jdata *fastjson.Value) string {
 	if present {
 		info += fmt.Sprintf("%sHost=%s", separator, val)
 		return info
-	}
-
-	switch evtname {
-	case "PutBucketPublicAccessBlock":
-		info = ""
-		jpac := jdata.GetObject("requestParameters", "PublicAccessBlockConfiguration")
-		if jpac != nil {
-			info += fmt.Sprintf("BlockPublicAcls=%v BlockPublicPolicy=%v IgnorePublicAcls=%v RestrictPublicBuckets=%v ",
-				jdata.GetBool("BlockPublicAcls"),
-				jdata.GetBool("BlockPublicPolicy"),
-				jdata.GetBool("IgnorePublicAcls"),
-				jdata.GetBool("RestrictPublicBuckets"),
-			)
-		}
-	default:
-		info = ""
 	}
 
 	return info
@@ -711,24 +711,38 @@ func getfieldStr(jdata *fastjson.Value, id uint32) (bool, string) {
 		res = string(jdata.GetStringBytes("userAgent"))
 	case FieldIDCtInfo:
 		res = getEvtInfo(jdata)
-	case FieldIDCtIsKey:
-		ename := string(jdata.GetStringBytes("eventName"))
-		if strings.HasPrefix(ename, "Start") || strings.HasPrefix(ename, "Stop") || strings.HasPrefix(ename, "Create") ||
-			strings.HasPrefix(ename, "Destroy") || strings.HasPrefix(ename, "Delete") || strings.HasPrefix(ename, "Add") ||
-			strings.HasPrefix(ename, "Remove") || strings.HasPrefix(ename, "Terminate") || strings.HasPrefix(ename, "Put") ||
-			strings.HasPrefix(ename, "Associate") || strings.HasPrefix(ename, "Disassociate") || strings.HasPrefix(ename, "Attach") ||
-			strings.HasPrefix(ename, "Detach") || strings.HasPrefix(ename, "Add") || strings.HasPrefix(ename, "Open") ||
-			strings.HasPrefix(ename, "Close") || strings.HasPrefix(ename, "Wipe") || strings.HasPrefix(ename, "Update") ||
-			strings.HasPrefix(ename, "Upgrade") || strings.HasPrefix(ename, "Unlink") || strings.HasPrefix(ename, "Assign") ||
-			strings.HasPrefix(ename, "Unassign") || strings.HasPrefix(ename, "Suspend") || strings.HasPrefix(ename, "Set") ||
-			strings.HasPrefix(ename, "Run") || strings.HasPrefix(ename, "Register") || strings.HasPrefix(ename, "Deregister") ||
-			strings.HasPrefix(ename, "Reboot") || strings.HasPrefix(ename, "Purchase") || strings.HasPrefix(ename, "Modify") ||
-			strings.HasPrefix(ename, "Initialize") || strings.HasPrefix(ename, "Enable") || strings.HasPrefix(ename, "Disable") ||
-			strings.HasPrefix(ename, "Cancel") || strings.HasPrefix(ename, "Assign") || strings.HasPrefix(ename, "Admin") ||
-			strings.HasPrefix(ename, "Activate") {
+	case FieldIDCtReadOnly:
+		ro := jdata.GetBool("readOnly")
+		if ro {
 			res = "true"
 		} else {
-			res = "false"
+			oro := jdata.Get("readOnly")
+			if oro == nil {
+				//
+				// Once in a while, events without the readOnly property appear. We try to interpret them with the manual
+				// heuristic below.
+				//
+				ename := string(jdata.GetStringBytes("eventName"))
+				if strings.HasPrefix(ename, "Start") || strings.HasPrefix(ename, "Stop") || strings.HasPrefix(ename, "Create") ||
+					strings.HasPrefix(ename, "Destroy") || strings.HasPrefix(ename, "Delete") || strings.HasPrefix(ename, "Add") ||
+					strings.HasPrefix(ename, "Remove") || strings.HasPrefix(ename, "Terminate") || strings.HasPrefix(ename, "Put") ||
+					strings.HasPrefix(ename, "Associate") || strings.HasPrefix(ename, "Disassociate") || strings.HasPrefix(ename, "Attach") ||
+					strings.HasPrefix(ename, "Detach") || strings.HasPrefix(ename, "Add") || strings.HasPrefix(ename, "Open") ||
+					strings.HasPrefix(ename, "Close") || strings.HasPrefix(ename, "Wipe") || strings.HasPrefix(ename, "Update") ||
+					strings.HasPrefix(ename, "Upgrade") || strings.HasPrefix(ename, "Unlink") || strings.HasPrefix(ename, "Assign") ||
+					strings.HasPrefix(ename, "Unassign") || strings.HasPrefix(ename, "Suspend") || strings.HasPrefix(ename, "Set") ||
+					strings.HasPrefix(ename, "Run") || strings.HasPrefix(ename, "Register") || strings.HasPrefix(ename, "Deregister") ||
+					strings.HasPrefix(ename, "Reboot") || strings.HasPrefix(ename, "Purchase") || strings.HasPrefix(ename, "Modify") ||
+					strings.HasPrefix(ename, "Initialize") || strings.HasPrefix(ename, "Enable") || strings.HasPrefix(ename, "Disable") ||
+					strings.HasPrefix(ename, "Cancel") || strings.HasPrefix(ename, "Assign") || strings.HasPrefix(ename, "Admin") ||
+					strings.HasPrefix(ename, "Activate") {
+					res = "false"
+				} else {
+					res = "true"
+				}
+			} else {
+				res = "false"
+			}
 		}
 	case FieldIDS3Bucket:
 		val := jdata.GetStringBytes("requestParameters", "bucketName")
